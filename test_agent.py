@@ -37,3 +37,24 @@ class TestPayPalAIAgent(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+from webhook_handler import PayPalWebhookHandler
+
+class TestWebhookHandler(unittest.TestCase):
+    def setUp(self):
+        self.wh = PayPalWebhookHandler()
+
+    def test_payment_capture_completed(self):
+        payload = {
+            "id": "WH-TEST-CAP",
+            "event_type": "PAYMENT.CAPTURE.COMPLETED",
+            "resource": {"id": "111", "amount": {"value": "99.00", "currency_code": "MXN"}}
+        }
+        res = self.wh.verify_and_process_event({}, json.dumps(payload).encode('utf-8'))
+        self.assertEqual(res["status"], "success")
+        self.assertEqual(len(self.wh.received_events), 1)
+        self.assertEqual(self.wh.received_events[0]["amount"], "99.00")
+
+    def test_invalid_json_payload(self):
+        res = self.wh.verify_and_process_event({}, b"invalid-bytes")
+        self.assertEqual(res["status"], "error")
